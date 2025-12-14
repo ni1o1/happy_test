@@ -222,8 +222,8 @@ export const useGameStore = create<GameStore>((set, get) => ({
   tick: () => {
     const state = get();
 
-    // 更新时间
-    const newTime = new Date(state.time.getTime() + 30 * 60 * 1000); // +30分钟
+    // 更新时间 (加速到每小时)
+    const newTime = new Date(state.time.getTime() + 60 * 60 * 1000); // +1小时
     const hour = newTime.getHours();
 
     // 计算温度

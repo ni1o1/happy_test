@@ -3,103 +3,69 @@ import ReactECharts from 'echarts-for-react';
 import { useGameStore } from '../store/gameStore';
 
 const DataCharts: React.FC = () => {
-  const { history } = useGameStore();
+  const { history, time } = useGameStore();
 
-  const formatTime = (date: Date) => {
-    return date.toLocaleTimeString('zh-CN', {
-      hour: '2-digit',
-      minute: '2-digit',
-      hour12: false
-    });
+  // 生成24小时时间轴
+  const generateTimeAxis = () => {
+    const times = [];
+    for (let i = 0; i < 24; i++) {
+      times.push(`${i.toString().padStart(2, '0')}:00`);
+    }
+    return times;
   };
 
-  // 能源趋势图配置
-  const powerOption = {
-    title: {
-      text: '能源趋势',
-      left: 'center',
-      textStyle: {
-        color: '#374151',
-        fontSize: 16,
-        fontWeight: 'bold'
-      }
-    },
-    tooltip: {
-      trigger: 'axis',
-      backgroundColor: 'rgba(255, 255, 255, 0.95)',
-      borderColor: '#d1d5db',
-      borderWidth: 1,
-      textStyle: {
-        color: '#374151'
-      },
-      formatter: function (params: any) {
-        let result = params[0].axisValue + '<br/>';
-        params.forEach((param: any) => {
-          result += param.marker + param.seriesName + ': ' + param.value + ' kW<br/>';
-        });
-        return result;
-      }
-    },
-    legend: {
-      data: ['发电量', '耗电量'],
-      bottom: 10,
-      textStyle: {
-        color: '#6b7280'
-      }
-    },
+  // 获取当前时间的索引
+  const getCurrentHourIndex = () => {
+    return time.getHours();
+  };
+
+  // 准备24小时数据
+  const prepare24HourData = () => {
+    const productionData = new Array(24).fill(0);
+    const consumptionData = new Array(24).fill(0);
+
+    // 填充历史数据
+    history.powerTrend.forEach(item => {
+      const hour = item.time.getHours();
+      productionData[hour] = item.production;
+      consumptionData[hour] = item.consumption;
+    });
+
+    return { productionData, consumptionData };
+  };
+
+  const { productionData, consumptionData } = prepare24HourData();
+  const currentHour = getCurrentHourIndex();
+
+  // 迷你趋势图配置
+  const option = {
     grid: {
-      left: '3%',
-      right: '4%',
-      bottom: '15%',
-      top: '15%',
-      containLabel: true
+      top: 5,
+      bottom: 0,
+      left: 0,
+      right: 0,
+      containLabel: false
     },
     xAxis: {
       type: 'category',
-      boundaryGap: false,
-      data: history.powerTrend.map(item => formatTime(item.time)),
-      axisLine: {
-        lineStyle: {
-          color: '#d1d5db'
-        }
-      },
-      axisLabel: {
-        color: '#6b7280',
-        fontSize: 12
-      }
+      data: generateTimeAxis(),
+      show: false
     },
     yAxis: {
       type: 'value',
-      name: '功率 (kW)',
-      nameTextStyle: {
-        color: '#6b7280'
-      },
-      axisLine: {
-        lineStyle: {
-          color: '#d1d5db'
-        }
-      },
-      axisLabel: {
-        color: '#6b7280'
-      },
-      splitLine: {
-        lineStyle: {
-          color: '#e5e7eb',
-          type: 'dashed'
-        }
-      }
+      show: false,
+      min: 0
     },
     series: [
       {
         name: '发电量',
         type: 'line',
         smooth: true,
-        data: history.powerTrend.map(item => item.production.toFixed(1)),
-        itemStyle: {
-          color: '#059669'
-        },
+        data: productionData,
+        symbol: 'none',
         lineStyle: {
-          width: 3
+          width: 2,
+          color: '#059669'
         },
         areaStyle: {
           color: {
@@ -113,18 +79,28 @@ const DataCharts: React.FC = () => {
               { offset: 1, color: 'rgba(5, 150, 105, 0.1)' }
             ]
           }
+        },
+        markPoint: {
+          data: [{
+            xAxis: currentHour,
+            yAxis: productionData[currentHour],
+            symbol: 'circle',
+            symbolSize: 6,
+            itemStyle: {
+              color: '#059669'
+            }
+          }]
         }
       },
       {
         name: '耗电量',
         type: 'line',
         smooth: true,
-        data: history.powerTrend.map(item => item.consumption.toFixed(1)),
-        itemStyle: {
-          color: '#dc2626'
-        },
+        data: consumptionData,
+        symbol: 'none',
         lineStyle: {
-          width: 3
+          width: 2,
+          color: '#dc2626'
         },
         areaStyle: {
           color: {
@@ -138,116 +114,26 @@ const DataCharts: React.FC = () => {
               { offset: 1, color: 'rgba(220, 38, 38, 0.1)' }
             ]
           }
-        }
-      }
-    ]
-  };
-
-  // 资金趋势图配置
-  const moneyOption = {
-    title: {
-      text: '资金趋势',
-      left: 'center',
-      textStyle: {
-        color: '#374151',
-        fontSize: 16,
-        fontWeight: 'bold'
-      }
-    },
-    tooltip: {
-      trigger: 'axis',
-      backgroundColor: 'rgba(255, 255, 255, 0.95)',
-      borderColor: '#d1d5db',
-      borderWidth: 1,
-      textStyle: {
-        color: '#374151'
-      },
-      formatter: function (params: any) {
-        return params[0].axisValue + '<br/>' +
-               params[0].marker + '资金: ¥' + params[0].value.toLocaleString();
-      }
-    },
-    grid: {
-      left: '3%',
-      right: '4%',
-      bottom: '15%',
-      top: '15%',
-      containLabel: true
-    },
-    xAxis: {
-      type: 'category',
-      boundaryGap: false,
-      data: history.moneyTrend.map(item => formatTime(item.time)),
-      axisLine: {
-        lineStyle: {
-          color: '#d1d5db'
-        }
-      },
-      axisLabel: {
-        color: '#6b7280',
-        fontSize: 12
-      }
-    },
-    yAxis: {
-      type: 'value',
-      name: '资金 (¥)',
-      nameTextStyle: {
-        color: '#6b7280'
-      },
-      axisLine: {
-        lineStyle: {
-          color: '#d1d5db'
-        }
-      },
-      axisLabel: {
-        color: '#6b7280',
-        formatter: '¥{value}'
-      },
-      splitLine: {
-        lineStyle: {
-          color: '#e5e7eb',
-          type: 'dashed'
-        }
-      }
-    },
-    series: [
-      {
-        name: '资金',
-        type: 'line',
-        smooth: true,
-        data: history.moneyTrend.map(item => item.money),
-        itemStyle: {
-          color: '#d97706'
         },
-        lineStyle: {
-          width: 3
-        },
-        areaStyle: {
-          color: {
-            type: 'linear',
-            x: 0,
-            y: 0,
-            x2: 0,
-            y2: 1,
-            colorStops: [
-              { offset: 0, color: 'rgba(217, 119, 6, 0.3)' },
-              { offset: 1, color: 'rgba(217, 119, 6, 0.1)' }
-            ]
-          }
+        markPoint: {
+          data: [{
+            xAxis: currentHour,
+            yAxis: consumptionData[currentHour],
+            symbol: 'circle',
+            symbolSize: 6,
+            itemStyle: {
+              color: '#dc2626'
+            }
+          }]
         }
       }
     ]
   };
 
   return (
-    <div className="w-full h-full p-4 bg-white rounded-lg border border-gray-200">
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 h-full">
-        <div className="h-80">
-          <ReactECharts option={powerOption} style={{ height: '100%', width: '100%' }} />
-        </div>
-        <div className="h-80">
-          <ReactECharts option={moneyOption} style={{ height: '100%', width: '100%' }} />
-        </div>
+    <div className="h-full w-full bg-white/80 backdrop-blur-sm border-b border-gray-300 px-3 py-2">
+      <div className="h-full">
+        <ReactECharts option={option} style={{ height: '100%', width: '100%' }} />
       </div>
     </div>
   );
