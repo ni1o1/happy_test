@@ -143,6 +143,10 @@ export const useGameStore = create<GameStore>((set, get) => ({
   building: {
     floors: [createDefaultFloor(1)]
   },
+  history: {
+    powerTrend: [],
+    moneyTrend: []
+  },
 
   // 添加楼层
   addFloor: () => {
@@ -264,15 +268,34 @@ export const useGameStore = create<GameStore>((set, get) => ({
 
     // 净收益（负值表示亏损）
     const netProfit = totalIncome - totalExpense;
+    const newMoney = state.money + netProfit;
+
+    // 更新历史数据（限制长度为60个数据点）
+    const newPowerData = {
+      time: newTime,
+      production: totalProduction,
+      consumption: totalConsumption
+    };
+    const newMoneyData = {
+      time: newTime,
+      money: newMoney
+    };
+
+    const updatedPowerTrend = [...state.history.powerTrend, newPowerData].slice(-60);
+    const updatedMoneyTrend = [...state.history.moneyTrend, newMoneyData].slice(-60);
 
     // 更新状态
     set({
       time: newTime,
-      money: state.money + netProfit,
+      money: newMoney,
       totalEnergyProduction: totalProduction,
       totalEnergyConsumption: totalConsumption,
       globalTemperature: temperature,
-      building: state.building // 保持引用不变
+      building: state.building, // 保持引用不变
+      history: {
+        powerTrend: updatedPowerTrend,
+        moneyTrend: updatedMoneyTrend
+      }
     });
   }
 }));

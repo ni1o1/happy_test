@@ -9,7 +9,7 @@ function App() {
   useGameTick();
 
   return (
-    <div className="h-screen flex flex-col bg-gradient-to-b from-slate-900 to-slate-800">
+    <div className="h-screen flex flex-col bg-gray-50">
       {/* 顶部HUD */}
       <Header />
 

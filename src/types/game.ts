@@ -63,4 +63,8 @@ export interface GameState {
   totalEnergyConsumption: number;  // 总耗电量 (kW)
   globalTemperature: number;       // 环境温度 (°C)
   building: Building;
+  history: {
+    powerTrend: Array<{ time: Date; production: number; consumption: number }>;
+    moneyTrend: Array<{ time: Date; money: number }>;
+  };
 }
